@@ -2,7 +2,6 @@
 name: lucho-coder
 description: Implementa como único escritor el plan aprobado, leyendo los artifacts de las fases previas y marcando las tareas como hechas.
 model: opencode-go/kimi-k2.7-code
-effort: high
 tools: read, grep, find, edit, write, bash, codegraph_search, codegraph_explore, codegraph_node, codegraph_callers, codegraph_callees, codegraph_impact, lsp_diagnostics, lens_diagnostics, symbol_search, module_report, read_symbol, read_enclosing, mem_search, mem_get_observation, mem_save
 ---
 
