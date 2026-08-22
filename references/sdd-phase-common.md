@@ -1,6 +1,6 @@
 # SDD Phase — Common Protocol
 
-Protocolo idéntico inyectado en todos los agentes de la pipeline SDD de Lucho.
+Protocolo idéntico inyectado en todos los agentes de la pipeline SDD de Lsar.
 
 ## Read-only vs memoria
 

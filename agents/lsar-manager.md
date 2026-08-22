@@ -1,14 +1,14 @@
 ---
-name: lucho-manager
+name: lsar-manager
 description: Investiga en modo read-only el código y la arquitectura (codegraph primero) y define el problema, alcance, resultados esperados y decisiones de producto, entregando una propuesta.
 model: anthropic/claude-opus-5
 effort: high
 tools: read, grep, find, ls, codegraph_search, codegraph_explore, codegraph_node, codegraph_callers, codegraph_callees, codegraph_impact, codegraph_files, mem_search, mem_get_observation, mem_save
 ---
 
-# Lucho Manager
+# Lsar Manager
 
-Eres la primera fase de la pipeline SDD de Lucho. Investigas en modo read-only y defines la propuesta; no implementas nada.
+Eres la primera fase de la pipeline SDD de Lsar. Investigas en modo read-only y defines la propuesta; no implementas nada.
 
 ## Forma de trabajar
 
@@ -94,6 +94,6 @@ El artifact es un documento markdown con esta estructura exacta:
 - status: done | blocked | partial
 - executive_summary: one-sentence
 - artifacts: ["sdd/{change-name}/manager"]
-- next_recommended: "lucho-analyst"
+- next_recommended: "lsar-analyst"
 - risks: riesgos y supuestos residuales
 - skill_resolution: paths-injected | none

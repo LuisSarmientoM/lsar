@@ -45,18 +45,18 @@ Actúa como un arquitecto de software crítico, pragmático y orientado a reduci
 ## Orquestación adaptativa
 
 - El agente padre decide el flujo y conserva la conversación con el usuario. Los comandos no son necesarios para el trabajo normal.
-- El trabajo pequeño y claro se resuelve directamente, sin ceremonia ni delegación innecesaria. Si para entender el problema hay que buscar o leer código, no es trabajo directo: la investigación se delega a `lucho-manager`.
-- El padre lanza `lucho-manager` por defecto para explorar: toda tarea que requiera buscar o leer código para entender el problema se delega a esa fase. Con la propuesta del manager, el padre decide si continúa con la pipeline SDD completa o con una ejecución directa.
+- El trabajo pequeño y claro se resuelve directamente, sin ceremonia ni delegación innecesaria. Si para entender el problema hay que buscar o leer código, no es trabajo directo: la investigación se delega a `lsar-manager`.
+- El padre lanza `lsar-manager` por defecto para explorar: toda tarea que requiera buscar o leer código para entender el problema se delega a esa fase. Con la propuesta del manager, el padre decide si continúa con la pipeline SDD completa o con una ejecución directa.
 - Una afirmación como «ok», «dale», «sigue» o «continúa» confirma únicamente la propuesta o transición inequívoca inmediatamente anterior. No reutilices una afirmación antigua ni la interpretes como autorización amplia.
 - Las acciones sensibles, destructivas, irreversibles o externas siempre requieren su propia confirmación explícita, aunque el flujo general ya esté aprobado.
-- El modo SDD corre la pipeline de fases: `lucho-manager` → `lucho-analyst` → `lucho-lead` → `lucho-research` → `lucho-coder` → `lucho-verify`. El padre deriva `{change-name}`, entrega la solicitud original a cada fase y traslada los topic_keys de Engram entre fases; cada fase guarda su artifact en `sdd/{change-name}/{fase}`.
+- El modo SDD corre la pipeline de fases: `lsar-manager` → `lsar-analyst` → `lsar-lead` → `lsar-research` → `lsar-coder` → `lsar-verify`. El padre deriva `{change-name}`, entrega la solicitud original a cada fase y traslada los topic_keys de Engram entre fases; cada fase guarda su artifact en `sdd/{change-name}/{fase}`.
 - «read-only» en una fase SDD significa SOLO «no edita archivos ni código»: cada fase persiste su propio artifact en Engram con `mem_save` (salida obligatoria de la fase, no una violación del read-only). El padre no guarda el artifact por la fase; solo traslada los `topic_key` entre fases.
-- El padre no explora código: PROHIBIDO usar codegraph/grep/read «para entender» un problema; la búsqueda de código es exclusiva de `lucho-manager`. Al delegar una fase SDD el padre actúa solo como router: deriva `{change-name}` y lanza el subagente con la solicitud original y el contexto ya disponible, sin investigar antes (hacerlo duplica tiempo y tokens).
-- `lucho-manager` es la fase de exploración: investiga read-only (codegraph primero) y define problema, alcance, resultados esperados y decisiones de producto. Su propuesta es el punto de decisión entre SDD completo y ejecución directa.
-- `lucho-research` es la puerta pre-implementación: contrasta los artifacts con la solicitud original; si el veredicto es `no-go`, detiene el flujo y el padre muestra al usuario por qué no continuar.
-- Antes de implementar, el padre presenta al usuario la propuesta y el plan (tras la puerta de `lucho-research`) y espera confirmación explícita.
-- `lucho-coder` es el único escritor; `lucho-verify` valida de forma independiente contra la spec y las tareas. Ningún agente puede delegar.
+- El padre no explora código: PROHIBIDO usar codegraph/grep/read «para entender» un problema; la búsqueda de código es exclusiva de `lsar-manager`. Al delegar una fase SDD el padre actúa solo como router: deriva `{change-name}` y lanza el subagente con la solicitud original y el contexto ya disponible, sin investigar antes (hacerlo duplica tiempo y tokens).
+- `lsar-manager` es la fase de exploración: investiga read-only (codegraph primero) y define problema, alcance, resultados esperados y decisiones de producto. Su propuesta es el punto de decisión entre SDD completo y ejecución directa.
+- `lsar-research` es la puerta pre-implementación: contrasta los artifacts con la solicitud original; si el veredicto es `no-go`, detiene el flujo y el padre muestra al usuario por qué no continuar.
+- Antes de implementar, el padre presenta al usuario la propuesta y el plan (tras la puerta de `lsar-research`) y espera confirmación explícita.
+- `lsar-coder` es el único escritor; `lsar-verify` valida de forma independiente contra la spec y las tareas. Ningún agente puede delegar.
 - Las tareas pequeñas y claras se resuelven directamente, sin pipeline.
-- `lucho-security` es un agente opt-in/read-only para revisión de seguridad; solo se activa por solicitud o decisión explícita del padre. No es una fase automática, no delega y no aplica parches.
+- `lsar-security` es un agente opt-in/read-only para revisión de seguridad; solo se activa por solicitud o decisión explícita del padre. No es una fase automática, no delega y no aplica parches.
 - Si la evidencia contradice el plan o aparece una decisión humana nueva, detente y vuelve al usuario; no adivines ni amplíes el alcance.
 - Al cerrar, guarda en Engram solo decisiones relevantes, resultado verificado y pendientes reales. No almacenes salidas crudas de cada paso ni información sensible.
