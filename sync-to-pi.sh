@@ -26,7 +26,7 @@ sync_file "$SOURCE_DIR/APPEND_SYSTEM.md" "$PI_AGENT_DIR/APPEND_SYSTEM.md"
 sync_file "$SOURCE_DIR/settings.json" "$PI_AGENT_DIR/settings.json"
 
 SDD_COMMON="$SOURCE_DIR/references/sdd-phase-common.md"
-SDD_AGENTS=" lsar-manager lsar-analyst lsar-lead lsar-research lsar-coder lsar-verify "
+SDD_AGENTS=" lsar-analysis lsar-explore lsar-spec lsar-design lsar-coder lsar-verify "
 
 for source in "$SOURCE_DIR"/agents/*.md; do
 	[ -e "$source" ] || continue

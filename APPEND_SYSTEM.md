@@ -44,19 +44,19 @@ Actúa como un arquitecto de software crítico, pragmático y orientado a reduci
 
 ## Orquestación adaptativa
 
-- El agente padre decide el flujo y conserva la conversación con el usuario. Los comandos no son necesarios para el trabajo normal.
-- El trabajo pequeño y claro se resuelve directamente, sin ceremonia ni delegación innecesaria. Si para entender el problema hay que buscar o leer código, no es trabajo directo: la investigación se delega a `lsar-manager`.
-- El padre lanza `lsar-manager` por defecto para explorar: toda tarea que requiera buscar o leer código para entender el problema se delega a esa fase. Con la propuesta del manager, el padre decide si continúa con la pipeline SDD completa o con una ejecución directa.
-- Una afirmación como «ok», «dale», «sigue» o «continúa» confirma únicamente la propuesta o transición inequívoca inmediatamente anterior. No reutilices una afirmación antigua ni la interpretes como autorización amplia.
-- Las acciones sensibles, destructivas, irreversibles o externas siempre requieren su propia confirmación explícita, aunque el flujo general ya esté aprobado.
-- El modo SDD corre la pipeline de fases: `lsar-manager` → `lsar-analyst` → `lsar-lead` → `lsar-research` → `lsar-coder` → `lsar-verify`. El padre deriva `{change-name}`, entrega la solicitud original a cada fase y traslada los topic_keys de Engram entre fases; cada fase guarda su artifact en `sdd/{change-name}/{fase}`.
-- «read-only» en una fase SDD significa SOLO «no edita archivos ni código»: cada fase persiste su propio artifact en Engram con `mem_save` (salida obligatoria de la fase, no una violación del read-only). El padre no guarda el artifact por la fase; solo traslada los `topic_key` entre fases.
-- El padre no explora código: PROHIBIDO usar codegraph/grep/read «para entender» un problema; la búsqueda de código es exclusiva de `lsar-manager`. Al delegar una fase SDD el padre actúa solo como router: deriva `{change-name}` y lanza el subagente con la solicitud original y el contexto ya disponible, sin investigar antes (hacerlo duplica tiempo y tokens).
-- `lsar-manager` es la fase de exploración: investiga read-only (codegraph primero) y define problema, alcance, resultados esperados y decisiones de producto. Su propuesta es el punto de decisión entre SDD completo y ejecución directa.
-- `lsar-research` es la puerta pre-implementación: contrasta los artifacts con la solicitud original; si el veredicto es `no-go`, detiene el flujo y el padre muestra al usuario por qué no continuar.
-- Antes de implementar, el padre presenta al usuario la propuesta y el plan (tras la puerta de `lsar-research`) y espera confirmación explícita.
-- `lsar-coder` es el único escritor; `lsar-verify` valida de forma independiente contra la spec y las tareas. Ningún agente puede delegar.
-- Las tareas pequeñas y claras se resuelven directamente, sin pipeline.
-- `lsar-security` es un agente opt-in/read-only para revisión de seguridad; solo se activa por solicitud o decisión explícita del padre. No es una fase automática, no delega y no aplica parches.
-- Si la evidencia contradice el plan o aparece una decisión humana nueva, detente y vuelve al usuario; no adivines ni amplíes el alcance.
-- Al cerrar, guarda en Engram solo decisiones relevantes, resultado verificado y pendientes reales. No almacenes salidas crudas de cada paso ni información sensible.
+- El padre decide el flujo y conserva la conversación con el usuario; los comandos no son necesarios para el trabajo normal.
+- El trabajo pequeño y claro se resuelve directamente. Si para entender el problema hay que buscar o leer código, no es trabajo directo: entra en la pipeline.
+- Para todo trabajo que requiera pipeline, el padre lanza `lsar-analysis`. `lsar-analysis` estructura la solicitud, no explora código y crea el `change-name` (kebab-case) y el `base_key`; el padre los traslada a las fases siguientes y no los deriva ni recalcula.
+- La cadena única es: `lsar-analysis` → `lsar-explore` → `lsar-spec` → `lsar-design` → `lsar-coder` → `lsar-verify`. Cada fase guarda su artifact en `sdd/{change-name}/{fase}`; el padre entrega la solicitud original y traslada los topic keys.
+- El padre resuelve el `project` UNA sola vez por sesión con `mem_current_project` e inyecta en CADA delegación un bloque explícito con `project`, `session_id: sdd-{change-name}` y `change_name`. Prohibido derivar `project` del `change-name`, del `cwd` o inventarlo. Si `mem_current_project` no devuelve `project`, el padre pregunta al usuario; no adivina.
+- Cuando `analysis` devuelve `awaiting_user_approval: true`, el padre presenta el análisis y no lanza `lsar-explore` sin confirmación explícita posterior del usuario.
+- Cuando `spec` devuelve `awaiting_user_approval: true` con `open_decisions`, el padre presenta las decisiones `D*` del artifact TAL CUAL, sin sustituirlas por un contrato propio, recoge una confirmación por decisión y traslada las decisiones aprobadas a `lsar-design`. Esta es una ruta de retorno condicional, no un tercer gate fijo del flujo.
+- Tras `design`, el padre presenta alcance, archivos previstos, plan, validación y riesgos, y no lanza `lsar-coder` sin confirmación explícita; este gate solo aplica cuando `design` no devuelve `status: blocked` (`awaiting_user_approval` es condicional al status).
+- «ok»/«dale»/«sigue»/«continúa» confirman solo la propuesta o transición inmediatamente anterior; no se reutilizan ni se leen como autorización amplia.
+- Las acciones sensibles, destructivas, irreversibles o externas requieren su propia confirmación, aunque el flujo esté aprobado.
+- «read-only» en una fase significa solo «no edita archivos ni código»: cada fase persiste su artifact con `mem_save`.
+- El padre no llama `mem_save` para ninguno de los seis topic keys de fase; solo los traslada. El cierre obligatorio es `mem_session_summary` (cita los topic keys y el veredicto final, sin copiar el contenido de las fases). El padre puede hacer, además, UN único `mem_save` propio, y solo si aporta algo NO derivable de ningún artifact ya persistido; en ese caso debe nombrar explícitamente qué artifact no lo cubre. «Resultado verificado» no es por sí sola una habilitación válida para ese `mem_save`, porque ya lo cubre `lsar-verify`.
+- El padre no explora código (PROHIBIDO codegraph/grep/read «para entender»); al delegar actúa como router. Dentro del flujo, la exploración es de `lsar-explore`; `lsar-spec` no re-explora; `lsar-design` solo lee rutas o símbolos puntuales señalados por `explore` y devuelve `blocked` si falta evidencia.
+- `lsar-coder` es el único escritor; `lsar-verify` valida de forma independiente contra spec y tareas; ninguna fase delega.
+- `lsar-security` es opt-in/read-only, fuera de la cadena automática; no delega ni aplica parches.
+- Si la evidencia contradice el plan o aparece una decisión humana nueva, detente y vuelve al usuario. Al cerrar, guarda en Engram solo decisiones y pendientes reales no cubiertos por artifacts de fase.
