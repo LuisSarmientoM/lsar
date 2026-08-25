@@ -26,6 +26,14 @@ function escapeForAppleScript(value: string): string {
 	return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
+function formatTimestamp(date: Date): string {
+	const day = date.getDate().toString().padStart(2, "0");
+	const month = (date.getMonth() + 1).toString().padStart(2, "0");
+	const hours = date.getHours().toString().padStart(2, "0");
+	const minutes = date.getMinutes().toString().padStart(2, "0");
+	return `${day}/${month} ${hours}:${minutes}`;
+}
+
 type OriginToken = { windowId: string; tabId: string };
 let terminalNotifierAvailable: boolean | undefined;
 
@@ -155,13 +163,19 @@ export default function pushNotify(pi: ExtensionAPI): void {
 		lastAssistantStopReason = undefined;
 		if (!shouldNotify(ctx)) return;
 		const title = buildTitle(ctx);
+		let body = BODY;
+		try {
+			body = `${BODY} · ${formatTimestamp(new Date())}`;
+		} catch {
+			body = BODY;
+		}
 		if (isGhosttyTerminal()) {
 			hasTerminalNotifier((available) => {
-				if (available) notifyViaTerminalNotifier(title, BODY, originToken, soundName);
-				else notifyViaOsascriptFallback(title, BODY, soundName);
+				if (available) notifyViaTerminalNotifier(title, body, originToken, soundName);
+				else notifyViaOsascriptFallback(title, body, soundName);
 			});
 		} else {
-			notifyViaOsascriptFallback(title, BODY, soundName);
+			notifyViaOsascriptFallback(title, body, soundName);
 		}
 	});
 }
