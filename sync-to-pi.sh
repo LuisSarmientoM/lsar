@@ -63,3 +63,8 @@ if [ -d "$SOURCE_DIR/references" ]; then
 fi
 
 printf '\nSync complete. Run /reload in Pi to activate the changes.\n'
+if command -v terminal-notifier >/dev/null 2>&1; then
+	printf 'terminal-notifier detected.\n'
+else
+	printf 'Recommendation: install terminal-notifier manually (brew install terminal-notifier) for precise Ghostty notification focus.\n' >&2
+fi

@@ -57,6 +57,8 @@ La referencia canónica es [`references/skills-controlled.md`](references/skills
 
 Requisitos previos para las herramientas `codegraph_*`: instala el CLI global (`npm install -g @colbymchenry/codegraph`) e inicializa el índice en cada proyecto a consultar (`codegraph init -i`). Sin ellos las herramientas fallan aunque este repo esté sincronizado.
 
+Para el foco preciso de notificaciones en Ghostty, instala manualmente `terminal-notifier` (`brew install terminal-notifier`). Si falta, las notificaciones degradan automáticamente a una notificación sin foco preciso. El sonido normal es `Blow` (no `Blowy`, que no existe en macOS estándar) y el sonido de error es `Sosumi`.
+
 Después de sincronizar o copiar los archivos al runtime de Pi, ejecuta `/reload` o reinicia Pi. `sync-to-pi.sh` no elimina archivos obsoletos del destino. Los cuatro agentes legacy ya no existen en el repo, pero sus copias pueden seguir presentes en `$PI_AGENT_DIR/agents/` y requieren una acción destructiva separada, posterior a la Etapa 7, con autorización explícita:
 
 - `$PI_AGENT_DIR/agents/lsar-manager.md`
