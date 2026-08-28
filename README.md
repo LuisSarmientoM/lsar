@@ -59,7 +59,15 @@ Requisitos previos para las herramientas `codegraph_*`: instala el CLI global (`
 
 Para el foco preciso de notificaciones en Ghostty, instala manualmente `terminal-notifier` (`brew install terminal-notifier`). Si falta, las notificaciones degradan automáticamente a una notificación sin foco preciso. El sonido normal es `Blow` (no `Blowy`, que no existe en macOS estándar) y el sonido de error es `Sosumi`.
 
-Después de sincronizar o copiar los archivos al runtime de Pi, ejecuta `/reload` o reinicia Pi. `sync-to-pi.sh` no elimina archivos obsoletos del destino. Los cuatro agentes legacy ya no existen en el repo, pero sus copias pueden seguir presentes en `$PI_AGENT_DIR/agents/` y requieren una acción destructiva separada, posterior a la Etapa 7, con autorización explícita:
+Después de sincronizar o copiar los archivos al runtime de Pi, ejecuta `/reload` o reinicia Pi. `sync-to-pi.sh` no elimina archivos obsoletos del destino.
+
+### Contexto SDD por sesión
+
+`APPEND_SYSTEM.md` conserva su nombre reservado, se instala y Pi lo autocarga con solo las instrucciones base. El bloque de orquestación vive aparte en `references/lsar-orchestration.md` y es opt-in: al iniciar una sesión interactiva nueva se pregunta exactamente `¿quieres SDD pipeline?`. `sí` añade el bloque SDD completo al system prompt; `no` no añade nada y deja únicamente la base. La elección dura toda la sesión y se restaura en `resume`, `reload` y `fork`; cambiarla requiere una sesión nueva.
+
+En modos sin UI (`print`, `json` y procesos `--no-session`) no se pregunta y el valor predeterminado es `no`. El flag explícito `--sdd-pipeline` fuerza `sí`. La cancelación del diálogo también usa `no`. `sync-to-pi.sh` sigue instalando `APPEND_SYSTEM.md` bajo el nombre reservado y distribuye la referencia separada sin cambios de script.
+
+Este contexto no bloquea ni desregistra `subagent_run` ni `tool_call`: los subagentes invocados explícitamente siguen disponibles en ambos modos. Con `no`, el bloque SDD simplemente no se añade; si se pide después usar la pipeline, se ejecuta lo solicitado sin cambiar el modo de la sesión. Los cuatro agentes legacy ya no existen en el repo, pero sus copias pueden seguir presentes en `$PI_AGENT_DIR/agents/` y requieren una acción destructiva separada, posterior a la Etapa 7, con autorización explícita:
 
 - `$PI_AGENT_DIR/agents/lsar-manager.md`
 - `$PI_AGENT_DIR/agents/lsar-analyst.md`
