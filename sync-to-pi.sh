@@ -9,7 +9,7 @@ if [ -z "$PI_AGENT_DIR" ] || [ "$PI_AGENT_DIR" = "/" ]; then
 	exit 1
 fi
 
-mkdir -p "$PI_AGENT_DIR/agents" "$PI_AGENT_DIR/extensions"
+mkdir -p "$PI_AGENT_DIR/agents" "$PI_AGENT_DIR/extensions" "$PI_AGENT_DIR/prompts"
 
 sync_file() {
 	source=$1
@@ -51,6 +51,11 @@ done
 for source in "$SOURCE_DIR"/extensions/*.ts; do
 	[ -e "$source" ] || continue
 	sync_file "$source" "$PI_AGENT_DIR/extensions/$(basename "$source")"
+done
+
+for source in "$SOURCE_DIR"/prompts/*.md; do
+	[ -e "$source" ] || continue
+	sync_file "$source" "$PI_AGENT_DIR/prompts/$(basename "$source")"
 done
 
 if [ -d "$SOURCE_DIR/references" ]; then
