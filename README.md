@@ -65,9 +65,15 @@ Después de sincronizar o copiar los archivos al runtime de Pi, ejecuta `/reload
 
 `APPEND_SYSTEM.md` conserva su nombre reservado, se instala y Pi lo autocarga con solo las instrucciones base. El bloque de orquestación vive aparte en `references/lsar-orchestration.md` y es opt-in: al iniciar una sesión interactiva nueva se pregunta exactamente `¿quieres SDD pipeline?`. `sí` añade el bloque SDD completo al system prompt; `no` no añade nada y deja únicamente la base. La elección dura toda la sesión y se restaura en `resume`, `reload` y `fork`; cambiarla requiere una sesión nueva.
 
-En modos sin UI (`print`, `json` y procesos `--no-session`) no se pregunta y el valor predeterminado es `no`. El flag explícito `--sdd-pipeline` fuerza `sí`. La cancelación del diálogo también usa `no`. `sync-to-pi.sh` sigue instalando `APPEND_SYSTEM.md` bajo el nombre reservado y distribuye la referencia separada sin cambios de script.
+Un proyecto puede desactivar la activación automática creando exactamente `<cwd>/.pi/lsar.json` con:
 
-Este contexto no bloquea ni desregistra `subagent_run` ni `tool_call`: los subagentes invocados explícitamente siguen disponibles en ambos modos. Con `no`, el bloque SDD simplemente no se añade; si se pide después usar la pipeline, se ejecuta lo solicitado sin cambiar el modo de la sesión. Los cuatro agentes legacy ya no existen en el repo, pero sus copias pueden seguir presentes en `$PI_AGENT_DIR/agents/` y requieren una acción destructiva separada, posterior a la Etapa 7, con autorización explícita:
+```json
+{ "pipeline": "never" }
+```
+
+`never` prevalece sobre la elección persistida y sobre `--sdd-pipeline`, también en sesiones sin UI; los archivos ausentes, `{}` o sin `pipeline` no cambian el comportamiento. JSON, raíz o valor inválidos se ignoran con un aviso no bloqueante. Solo se consulta esa ruta exacta: no se busca en directorios ascendentes ni existe configuración global. La exclusión se evalúa en cada `session_start` y no bloquea `subagent_run`, `tool_call` ni la invocación manual de agentes `lsar-*`. `sync-to-pi.sh` sigue instalando `APPEND_SYSTEM.md` bajo el nombre reservado y distribuye la referencia separada sin cambios de script.
+
+Los cuatro agentes legacy ya no existen en el repo, pero sus copias pueden seguir presentes en `$PI_AGENT_DIR/agents/` y requieren una acción destructiva separada, posterior a la Etapa 7, con autorización explícita:
 
 - `$PI_AGENT_DIR/agents/lsar-manager.md`
 - `$PI_AGENT_DIR/agents/lsar-analyst.md`
