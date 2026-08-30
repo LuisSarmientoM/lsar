@@ -43,12 +43,12 @@ No se requiere ningún artifact adicional para verificar.
 
 Pasos:
 
-1. Recupera los artifacts con `mem_get_observation`.
+1. Recupera los artifacts con `mem_get_observation`. Recupera también, si existe, el artifact previo propio `sdd/{change-name}/verify` y lee su `attempt` (ausencia ⇒ `attempt: 0`). Lee `references/lsar-orchestration.md` con la tool `read` para obtener el presupuesto máximo vigente; no hardcodees su valor.
 2. Contrasta cada criterio `C*` de `spec` y cada tarea `T*` de `design` contra el diff y el comportamiento observable; no confíes en la declaración de `coder`.
 3. Antes de persistir, comprueba cobertura por ids: el conjunto de filas contiene exactamente todos los `C*` esperados de `spec` y todos los `T*` esperados de `design`, cada uno una vez; contar filas no basta. Registra ids esperados, presentes, faltantes y duplicados.
 4. Ejecuta primero el check enfocado más pequeño; amplía solo si el riesgo lo exige y el padre lo autorizó.
 5. Clasifica cada hallazgo: defecto introducido, problema preexistente o evidencia insuficiente.
-6. Mantén los veredictos `pass`, `fail` o `inconclusive` y guarda el artifact con la plantilla indicada abajo y responde con el Result Contract.
+6. Mantén los veredictos `pass`, `fail` o `inconclusive`. `pass` no incrementa `attempt`, produce `status: done` y `next_recommended: "none"`. `fail` concede el intento siguiente: si el valor previo de `attempt` es menor que el presupuesto leído, incrementa `attempt` en 1, produce `status: partial` y `next_recommended: "lsar-coder"`; si el valor previo alcanza o supera el presupuesto, produce `status: blocked` y `next_recommended: "none"`. `inconclusive` no incrementa `attempt`, produce `status: blocked` y `next_recommended: "none"`. Conserva y extiende el historial de intentos antes de guardar el artifact con la plantilla indicada abajo y responder con el Result Contract.
 
 ## Engram save (mandatory)
 
@@ -76,6 +76,12 @@ El artifact es un documento markdown con esta estructura exacta:
 ### Hallazgos
 - {severidad}: {ubicación} — {evidencia y causalidad}
 
+### Presupuesto
+attempt: {n}/{max}
+
+### Historial de intentos
+- Intento {n}: {verdict} — {criterios/tareas incumplidos y qué cambió}
+
 ### Validación ejecutada
 {comandos y resultados exactos}
 
@@ -89,6 +95,6 @@ El artifact es un documento markdown con esta estructura exacta:
 - executive_summary: one-sentence
 - verdict: pass | fail | inconclusive
 - artifacts: ["sdd/{change-name}/verify"]
-- next_recommended: "none"
-- risks: riesgos residuales y áreas no probadas
+- next_recommended: "lsar-coder" cuando `verdict: fail` y el presupuesto está disponible; "none" cuando `verdict: pass`, `verdict: inconclusive` o el presupuesto está agotado
+- risks: riesgos residuales, áreas no probadas y presupuesto restante
 - skill_resolution: paths-injected | none
