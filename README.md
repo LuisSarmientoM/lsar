@@ -55,6 +55,12 @@ La referencia canónica es [`references/skills-controlled.md`](references/skills
 
 `references/sdd-phase-common.md` no es una instrucción controlada: es el protocolo común de la pipeline SDD, inyectado por `sync-to-pi.sh`.
 
+## Perfiles de modelos para subagentes
+
+La extensión registra `/subagent-profile-create`, `/subagent-profile-edit`, `/subagent-profile-delete` y `/subagent-profile-apply`; requieren UI interactiva. El catálogo dedicado vive en `$PI_CODING_AGENT_DIR/subagent-profiles.json` (por defecto `~/.pi/agent`) y usa perfiles con asignaciones `{ "model": "provider/model-id", "effort": "high" }`.
+
+Crear y editar trabajan sobre un borrador staged: permiten renombrar y añadir, editar o quitar agentes, y solo guardan tras validar y confirmar. Eliminar confirma y modifica únicamente el catálogo. Aplicar selecciona explícitamente un perfil, valida todos sus agentes instalados en `$PI_CODING_AGENT_DIR/agents/*.md` y muestra cada cambio. Solo reemplaza las líneas raíz `model:` y `effort:` del frontmatter; realiza escrituras temporales con rename y rollback ante fallos. Si no hay cambios no recarga; tras aplicar cambios ejecuta `/reload`. Si la recarga falla, reintenta `/reload` manualmente sin reaplicar. Los archivos `agents/` fuente del repositorio y las tareas ya iniciadas no se modifican.
+
 ## Activación
 
 Requisitos previos para las herramientas `codegraph_*`: instala el CLI global (`npm install -g @colbymchenry/codegraph`) e inicializa el índice en cada proyecto a consultar (`codegraph init -i`). Sin ellos las herramientas fallan aunque este repo esté sincronizado.
