@@ -63,7 +63,7 @@ Crear y editar trabajan sobre un borrador staged: permiten renombrar y añadir, 
 
 ## Activación
 
-Requisitos previos para las herramientas `codegraph_*`: instala el CLI global (`npm install -g @colbymchenry/codegraph`) e inicializa el índice en cada proyecto a consultar (`codegraph init -i`). Sin ellos las herramientas fallan aunque este repo esté sincronizado.
+Requisitos previos para las herramientas `codegraph_*`: instala el CLI global (`npm install -g @colbymchenry/codegraph`) e inicializa el índice en cada proyecto a consultar (`codegraph init -i`). Sin ellos las herramientas fallan aunque este repo esté sincronizado. El índice vive en `.codegraph/`, que es estado local ignorado por Git: `sync-to-pi.sh` no lo crea ni lo sincroniza, por lo que debe inicializarse por separado en cada proyecto. Los cambios en `agents/*.md` (p. ej. la prioridad CodeGraph-first de `lsar-explore`) solo llegan al runtime tras ejecutar `sync-to-pi.sh` y `/reload`.
 
 Para el foco preciso de notificaciones en Ghostty, instala manualmente `terminal-notifier` (`brew install terminal-notifier`). Si falta, las notificaciones degradan automáticamente a una notificación sin foco preciso. El sonido normal es `Blow` (no `Blowy`, que no existe en macOS estándar) y el sonido de error es `Sosumi`.
 
