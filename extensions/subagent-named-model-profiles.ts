@@ -14,6 +14,10 @@ import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import {
+  selectStagedOption,
+  type StagedOption,
+} from "./subagent-profile-selector.ts";
 type Assignment = { model: string; effort: string };
 type Profile = Record<string, Assignment>;
 const EFFORTS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
@@ -85,6 +89,31 @@ const models = (c: ExtensionContext) =>
     .getAvailable()
     .map((m) => `${m.provider}/${m.id}`)
     .sort();
+// Etiquetado puro (separación label/value; D6/D7). `value` es siempre el
+// identificador exacto; `label` es la representación visible decorada.
+// Los modelos salen del borrador (`profile`), nunca de una relectura del
+// frontmatter (C9, C10, C14).
+export function agentOptions(
+  names: string[],
+  profile: Profile,
+): StagedOption[] {
+  return names.map((name) => ({
+    value: name,
+    label: profile[name] ? `${name} — ${profile[name].model}` : name,
+  }));
+}
+// El modelo actual del agente en edición se marca con sufijo "(actual)" sin
+// alterar el orden de la lista ni la opción enfocada (C11). Si `current` no
+// está en el catálogo, ninguna opción lleva marca; no se inyecta la ausente.
+export function modelOptions(
+  list: string[],
+  current: string | undefined,
+): StagedOption[] {
+  return list.map((id) => ({
+    value: id,
+    label: id === current ? `${id} (actual)` : id,
+  }));
+}
 async function pick(c: ExtensionContext, p: Record<string, Profile>) {
   const n = Object.keys(p).sort();
   return n.length ? c.ui.select("Perfil", n) : undefined;
@@ -93,15 +122,22 @@ async function edit(
   c: ExtensionContext,
   d: { name: string; profile: Profile },
 ) {
+  const plain = (values: string[]): StagedOption[] =>
+    values.map((v) => ({ value: v, label: v }));
   while (true) {
-    const op = await c.ui.select(`Editar ${d.name}`, [
-      "Renombrar",
-      "Añadir agente",
-      "Editar agente",
-      "Quitar agente",
-      "Guardar",
-      "Cancelar",
-    ]);
+    const op = await selectStagedOption(
+      c,
+      `Editar ${d.name}`,
+      plain([
+        "Renombrar",
+        "Añadir agente",
+        "Editar agente",
+        "Quitar agente",
+        "Guardar",
+        "Cancelar",
+      ]),
+      { searchable: false },
+    );
     if (!op || op === "Cancelar") {
       note(c, "Operación cancelada; no se escribió ningún cambio.");
       return false;
@@ -110,24 +146,57 @@ async function edit(
       const n = await c.ui.input("Nombre", d.name);
       if (n?.trim()) d.name = n.trim();
     } else if (op === "Añadir agente") {
-      const a = await c.ui.select(
+      const a = await selectStagedOption(
+        c,
         "Agente",
-        agents().filter((x) => !d.profile[x]),
+        agentOptions(
+          agents().filter((x) => !d.profile[x]),
+          d.profile,
+        ),
+        { searchable: true },
       );
       if (a) {
-        const m = await c.ui.select("Modelo", models(c));
-        const e = m && (await c.ui.select("Effort", EFFORTS));
+        const m = await selectStagedOption(
+          c,
+          "Modelo",
+          modelOptions(models(c), d.profile[a]?.model),
+          { searchable: true },
+        );
+        const e =
+          m &&
+          (await selectStagedOption(c, "Effort", plain(EFFORTS), {
+            searchable: false,
+          }));
         if (m && e) d.profile[a] = { model: m, effort: e };
       }
     } else if (op === "Editar agente") {
-      const a = await c.ui.select("Agente", Object.keys(d.profile));
+      const a = await selectStagedOption(
+        c,
+        "Agente",
+        agentOptions(Object.keys(d.profile), d.profile),
+        { searchable: true },
+      );
       if (a) {
-        const m = await c.ui.select("Modelo", models(c));
-        const e = m && (await c.ui.select("Effort", EFFORTS));
+        const m = await selectStagedOption(
+          c,
+          "Modelo",
+          modelOptions(models(c), d.profile[a]?.model),
+          { searchable: true },
+        );
+        const e =
+          m &&
+          (await selectStagedOption(c, "Effort", plain(EFFORTS), {
+            searchable: false,
+          }));
         if (m && e) d.profile[a] = { model: m, effort: e };
       }
     } else if (op === "Quitar agente") {
-      const a = await c.ui.select("Agente", Object.keys(d.profile));
+      const a = await selectStagedOption(
+        c,
+        "Agente",
+        agentOptions(Object.keys(d.profile), d.profile),
+        { searchable: true },
+      );
       if (a) delete d.profile[a];
     } else {
       validProfile(d.profile);
@@ -177,6 +246,12 @@ export default function extension(pi: ExtensionAPI) {
       handler: async (_a, c) => {
         if (!c.hasUI)
           return note(c, "Este comando requiere UI interactiva.", "warning");
+        if (typeof c.ui.custom !== "function")
+          return note(
+            c,
+            "Este comando requiere una interfaz de terminal interactiva (no disponible en este modo).",
+            "warning",
+          );
         try {
           const p = load();
           const old = kind === "edit" ? await pick(c, p) : undefined;
@@ -230,11 +305,14 @@ export default function extension(pi: ExtensionAPI) {
           n = await pick(c, p);
         if (!n) throw new Error("perfil inexistente");
         validProfile(p[n]);
-        const plans = Object.entries(p[n]).map(([a, v]) => prepared(a, v));
+        const plans = Object.entries(p[n]).map(([agent, v]) => ({
+          agent,
+          ...prepared(agent, v),
+        }));
         const diff = plans
           .map(
             (x) =>
-              `${x.file}: model ${x.before.model} -> ${p[n][path.basename(x.file, ".md")].model}; effort ${x.before.effort} -> ${p[n][path.basename(x.file, ".md")].effort}`,
+              `${x.agent}: model ${x.before.model} -> ${p[n][x.agent].model}; effort ${x.before.effort} -> ${p[n][x.agent].effort}`,
           )
           .join("\n");
         if (!(await c.ui.confirm("Aplicar perfil", `${n}\n${diff}`)))
