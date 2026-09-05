@@ -2,7 +2,11 @@
   "name": "lsar",
   "private": true,
   "type": "module",
+  "scripts": {
+    "test:subagent-profiles": "node --test extensions/*.test.ts"
+  },
   "devDependencies": {
-    "@earendil-works/pi-coding-agent": "0.84.2"
+    "@earendil-works/pi-coding-agent": "0.84.2",
+    "@earendil-works/pi-tui": "0.84.2"
   }
 }
