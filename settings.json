@@ -3,10 +3,11 @@
   "compaction": {
     "keepRecentTokens": 12000
   },
-  "defaultModel": "gpt-5.6-astra",
+  "defaultModel": "gpt-6-astra",
   "defaultProvider": "openai-codex",
   "defaultThinkingLevel": "medium",
-  "editorPaddingX": 1,
+  "hideThinkingBlock": false,
+  "editorPaddingX": 0,
   "enableInstallTelemetry": false,
   "enableSkillCommands": false,
   "httpIdleTimeoutMs": 60000,
@@ -22,7 +23,7 @@
     "npm:pi-btw",
     "npm:pi-mcp-adapter"
   ],
-  "quietStartup": true,
+  "quietStartup": false,
   "subagents": {
     "disableBuiltins": true
   },
