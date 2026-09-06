@@ -3,16 +3,83 @@
 // contra el handler real usando un `PI_CODING_AGENT_DIR` temporal y
 // cancelando el `confirm`, por lo que no escribe en los agentes fuente.
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 import extension, {
   agentOptions,
+  computeStatus,
   modelOptions,
 } from "../extensions/subagent-named-model-profiles.ts";
 
 type Cmd = { handler(args: unknown, ctx: unknown): Promise<void> };
+
+test("C8: computeStatus identifica un paquete coincidente", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "lsar-status-"));
+  try {
+    mkdirSync(path.join(root, "agents"), { recursive: true });
+    writeFileSync(
+      path.join(root, "agents", "a.md"),
+      "---\nmodel: prov/model\neffort: high\n---\nbody\n",
+    );
+    writeFileSync(
+      path.join(root, "subagent-profiles.json"),
+      JSON.stringify({ pack: { a: { model: "prov/model", effort: "high" } } }),
+    );
+    writeFileSync(
+      path.join(root, "subagent-active-profile.json"),
+      JSON.stringify({
+        name: "pack",
+        assignments: { a: { model: "prov/model", effort: "high" } },
+      }),
+    );
+    process.env.PI_CODING_AGENT_DIR = root;
+    assert.equal(computeStatus(), "models: pack");
+  } finally {
+    delete process.env.PI_CODING_AGENT_DIR;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("C8: computeStatus distingue estado no identificable y catálogo ausente o inválido", () => {
+  const root = mkdtempSync(path.join(tmpdir(), "lsar-status-"));
+  try {
+    mkdirSync(path.join(root, "agents"), { recursive: true });
+    writeFileSync(
+      path.join(root, "agents", "a.md"),
+      "---\nmodel: prov/actual\neffort: high\n---\nbody\n",
+    );
+    writeFileSync(
+      path.join(root, "subagent-profiles.json"),
+      JSON.stringify({
+        pack: { a: { model: "prov/expected", effort: "high" } },
+      }),
+    );
+    writeFileSync(
+      path.join(root, "subagent-active-profile.json"),
+      JSON.stringify({
+        name: "pack",
+        assignments: { a: { model: "prov/expected", effort: "high" } },
+      }),
+    );
+    process.env.PI_CODING_AGENT_DIR = root;
+    assert.equal(computeStatus(), "models: modificado");
+    writeFileSync(path.join(root, "subagent-profiles.json"), "{invalid");
+    assert.equal(computeStatus(), "models: custom");
+    rmSync(path.join(root, "subagent-profiles.json"));
+    assert.equal(computeStatus(), "models: custom");
+  } finally {
+    delete process.env.PI_CODING_AGENT_DIR;
+    rmSync(root, { recursive: true, force: true });
+  }
+});
 
 test("C9/C10: agentOptions etiqueta cada agente con su modelo del borrador; sin asignación = solo nombre", () => {
   const profile = {
@@ -107,8 +174,14 @@ test("C12/C14: el resumen de apply identifica por nombre de agente, sin ruta ni 
 
     // Identifica a cada agente por su nombre.
     assert.match(confirmMessage, /^myp\n/m);
-    assert.match(confirmMessage, /(^|\n)a: model prov\/old-a -> prov\/new-a; effort low -> high/);
-    assert.match(confirmMessage, /(^|\n)b: model prov\/old-b -> prov\/new-b; effort low -> medium/);
+    assert.match(
+      confirmMessage,
+      /(^|\n)a: model prov\/old-a -> prov\/new-a; effort low -> high/,
+    );
+    assert.match(
+      confirmMessage,
+      /(^|\n)b: model prov\/old-b -> prov\/new-b; effort low -> medium/,
+    );
     // Sin ruta absoluta ni sufijo .md en el identificador mostrado.
     assert.ok(!confirmMessage.includes(".md"), "no debe contener .md");
     assert.ok(
