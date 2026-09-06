@@ -8,12 +8,12 @@ import {
   unlinkSync,
   writeFileSync,
 } from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type {
   ExtensionAPI,
   ExtensionContext,
 } from "@earendil-works/pi-coding-agent";
+import { resolveAgentDir } from "./lib/agent-dir.ts";
 import {
   selectStagedOption,
   type StagedOption,
@@ -21,8 +21,7 @@ import {
 type Assignment = { model: string; effort: string };
 type Profile = Record<string, Assignment>;
 const EFFORTS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
-const rootDir = () =>
-  process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
+const rootDir = () => resolveAgentDir();
 const catalog = () => path.join(rootDir(), "subagent-profiles.json");
 const activeState = () => path.join(rootDir(), "subagent-active-profile.json");
 const STATUS_KEY = "subagent-model-profile";
@@ -145,6 +144,39 @@ export function modelOptions(
     label: id === current ? `${id} (actual)` : id,
   }));
 }
+type PickedAssignment = { agent: string; model: string; effort: string };
+async function pickAssignment(
+  c: ExtensionContext,
+  agentNames: string[],
+  profile: Profile,
+): Promise<PickedAssignment | undefined> {
+  const plain = (values: string[]): StagedOption[] =>
+    values.map((v) => ({ value: v, label: v }));
+  const a = await selectStagedOption(
+    c,
+    "Agente",
+    agentOptions(agentNames, profile),
+    {
+      searchable: true,
+    },
+  );
+  if (!a) return undefined;
+  const m = await selectStagedOption(
+    c,
+    "Modelo",
+    modelOptions(models(c), profile[a]?.model),
+    {
+      searchable: true,
+    },
+  );
+  const e =
+    m &&
+    (await selectStagedOption(c, "Effort", plain(EFFORTS), {
+      searchable: false,
+    }));
+  if (!m || !e) return undefined;
+  return { agent: a, model: m, effort: e };
+}
 async function pick(c: ExtensionContext, p: Record<string, Profile>) {
   const n = Object.keys(p).sort();
   return n.length ? c.ui.select("Perfil", n) : undefined;
@@ -177,50 +209,23 @@ async function edit(
       const n = await c.ui.input("Nombre", d.name);
       if (n?.trim()) d.name = n.trim();
     } else if (op === "Añadir agente") {
-      const a = await selectStagedOption(
+      const picked = await pickAssignment(
         c,
-        "Agente",
-        agentOptions(
-          agents().filter((x) => !d.profile[x]),
-          d.profile,
-        ),
-        { searchable: true },
+        agents().filter((x) => !d.profile[x]),
+        d.profile,
       );
-      if (a) {
-        const m = await selectStagedOption(
-          c,
-          "Modelo",
-          modelOptions(models(c), d.profile[a]?.model),
-          { searchable: true },
-        );
-        const e =
-          m &&
-          (await selectStagedOption(c, "Effort", plain(EFFORTS), {
-            searchable: false,
-          }));
-        if (m && e) d.profile[a] = { model: m, effort: e };
-      }
+      if (picked)
+        d.profile[picked.agent] = {
+          model: picked.model,
+          effort: picked.effort,
+        };
     } else if (op === "Editar agente") {
-      const a = await selectStagedOption(
-        c,
-        "Agente",
-        agentOptions(Object.keys(d.profile), d.profile),
-        { searchable: true },
-      );
-      if (a) {
-        const m = await selectStagedOption(
-          c,
-          "Modelo",
-          modelOptions(models(c), d.profile[a]?.model),
-          { searchable: true },
-        );
-        const e =
-          m &&
-          (await selectStagedOption(c, "Effort", plain(EFFORTS), {
-            searchable: false,
-          }));
-        if (m && e) d.profile[a] = { model: m, effort: e };
-      }
+      const picked = await pickAssignment(c, Object.keys(d.profile), d.profile);
+      if (picked)
+        d.profile[picked.agent] = {
+          model: picked.model,
+          effort: picked.effort,
+        };
     } else if (op === "Quitar agente") {
       const a = await selectStagedOption(
         c,

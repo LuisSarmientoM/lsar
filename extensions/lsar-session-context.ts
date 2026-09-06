@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type {
 	ExtensionAPI,
 	ExtensionContext,
 	BeforeAgentStartEvent,
 } from "@earendil-works/pi-coding-agent";
+import { resolveAgentDir } from "./lib/agent-dir.ts";
 
 type Choice = "yes" | "no";
 type ProjectPipelineConfig = { excluded: boolean; invalid: boolean };
@@ -15,17 +15,13 @@ type ContextEntry = {
 	data?: { choice?: Choice };
 };
 
-const AGENT_DIR =
-	process.env.PI_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
-const SDD_BLOCK_PATH = path.join(
-	AGENT_DIR,
-	"references",
-	"lsar-orchestration.md",
-);
+function sddBlockPath(): string {
+	return path.join(resolveAgentDir(), "references", "lsar-orchestration.md");
+}
 
 function loadSddBlock(): string | undefined {
 	try {
-		return readFileSync(SDD_BLOCK_PATH, "utf8");
+		return readFileSync(sddBlockPath(), "utf8");
 	} catch {
 		return undefined;
 	}
@@ -125,7 +121,7 @@ export default function lsarSessionContext(pi: ExtensionAPI) {
 	function notifyMissing(ctx: ExtensionContext) {
 		if (missingNotified) return;
 		missingNotified = true;
-		const message = `No se pudo leer ${SDD_BLOCK_PATH}; se continúa sin el bloque SDD.`;
+		const message = `No se pudo leer ${sddBlockPath()}; se continúa sin el bloque SDD.`;
 		if (ctx.hasUI) ctx.ui.notify(message, "warning");
 		else process.stderr.write(`[lsar-session-context] ${message}\n`);
 	}
