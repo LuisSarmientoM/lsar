@@ -145,6 +145,7 @@ test("C12/C14: el resumen de apply identifica por nombre de agente, sin ruta ni 
 
     const cmds: Record<string, Cmd> = {};
     extension({
+      on: () => {},
       registerCommand: (name: string, def: Cmd) => {
         cmds[name] = def;
       },
