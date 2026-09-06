@@ -49,6 +49,8 @@ Pasos:
 5. Actualiza `design` solo para progreso y evidencia: conserva íntegramente su diseño, decisiones y tareas; cambia `[ ]` a `[x]` únicamente con evidencia y añade evidencia breve bajo la tarea.
 6. Persiste el contenido combinado de `design` con `mem_update(id, content)` usando el id recuperado; después guarda el artifact `coder` con la plantilla indicada y responde con el Result Contract.
 
+> Si esta ejecución es una remediación solicitada tras un `verdict: fail` de `lsar-verify`, consume uno de los retrocesos definidos en `references/lsar-orchestration.md`. `lsar-coder` no calcula ni valida el presupuesto; esa responsabilidad es exclusiva de `lsar-verify`. La propiedad de artifacts y `next_recommended: "lsar-verify"` no cambian.
+
 ## Engram save (mandatory)
 
 - title: "sdd/{change-name}/coder"
