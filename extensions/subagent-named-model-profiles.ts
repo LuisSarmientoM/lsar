@@ -17,7 +17,7 @@ import type {
 import {
   selectStagedOption,
   type StagedOption,
-} from "./subagent-profile-selector.ts";
+} from "./lib/subagent-profile-selector.ts";
 type Assignment = { model: string; effort: string };
 type Profile = Record<string, Assignment>;
 const EFFORTS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];

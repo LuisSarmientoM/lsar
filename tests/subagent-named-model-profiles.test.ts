@@ -10,7 +10,7 @@ import { test } from "node:test";
 import extension, {
   agentOptions,
   modelOptions,
-} from "./subagent-named-model-profiles.ts";
+} from "../extensions/subagent-named-model-profiles.ts";
 
 type Cmd = { handler(args: unknown, ctx: unknown): Promise<void> };
 

@@ -10,7 +10,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import {
   selectStagedOption,
   type StagedOption,
-} from "./subagent-profile-selector.ts";
+} from "../extensions/lib/subagent-profile-selector.ts";
 
 const UP = "\x1b[A";
 const DOWN = "\x1b[B";

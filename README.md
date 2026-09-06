@@ -27,7 +27,7 @@ El agente padre mantiene el contexto y coordina. No reexplora: delega la explora
 - `lsar-coder` → `sdd/{change-name}/coder`: único escritor; implementa y puede usar `mem_update` sobre `design` solo para progreso y evidencia.
 - `lsar-verify` → `sdd/{change-name}/verify`: valida de forma independiente contra spec y tareas, con cobertura por ids.
 
-Cada fase guarda solo su propio topic key; el padre no llama `mem_save` para esos seis keys. `references/sdd-phase-common.md` se inyecta mediante `sync-to-pi.sh` en las seis fases, no en `lsar-security`. `lsar-security` es opt-in, read-only y queda fuera de la cadena. El script copia `APPEND_SYSTEM.md`, `settings.json`, `agents/*.md`, `extensions/*.ts`, `prompts/*.md` y `references/`, y no elimina archivos obsoletos del destino.
+Cada fase guarda solo su propio topic key; el padre no llama `mem_save` para esos seis keys. `references/sdd-phase-common.md` se inyecta mediante `sync-to-pi.sh` en las seis fases, no en `lsar-security`. `lsar-security` es opt-in, read-only y queda fuera de la cadena. El script copia `APPEND_SYSTEM.md`, `settings.json`, `agents/*.md`, `extensions/*.ts`, `extensions/lib/*.ts`, `prompts/*.md` y `references/`, y no elimina archivos obsoletos del destino.
 
 - `prompts/gh.md` proporciona el comando `/gh`: acepta `pr|is <N|URL>` o `<N|URL>`, consulta en modo read-only mediante `gh` el repositorio actual para números y usa `-R owner/repo` cuando la URL lo especifica.
 

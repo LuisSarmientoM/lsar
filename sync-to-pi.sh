@@ -48,9 +48,12 @@ for source in "$SOURCE_DIR"/agents/*.md; do
 	esac
 done
 
-for source in "$SOURCE_DIR"/extensions/*.ts; do
+for source in "$SOURCE_DIR"/extensions/*.ts "$SOURCE_DIR"/extensions/lib/*.ts; do
 	[ -e "$source" ] || continue
-	sync_file "$source" "$PI_AGENT_DIR/extensions/$(basename "$source")"
+	rel_path=${source#"$SOURCE_DIR/extensions/"}
+	destination="$PI_AGENT_DIR/extensions/$rel_path"
+	mkdir -p "$(dirname "$destination")"
+	sync_file "$source" "$destination"
 done
 
 for source in "$SOURCE_DIR"/prompts/*.md; do

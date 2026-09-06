@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test:subagent-profiles": "node --test extensions/*.test.ts"
+    "test:subagent-profiles": "node --test tests/*.test.ts"
   },
   "devDependencies": {
     "@earendil-works/pi-coding-agent": "0.84.2",
