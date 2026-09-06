@@ -24,6 +24,8 @@ const EFFORTS = ["off", "minimal", "low", "medium", "high", "xhigh", "max"];
 const rootDir = () =>
   process.env.PI_CODING_AGENT_DIR || path.join(os.homedir(), ".pi", "agent");
 const catalog = () => path.join(rootDir(), "subagent-profiles.json");
+const activeState = () => path.join(rootDir(), "subagent-active-profile.json");
+const STATUS_KEY = "subagent-model-profile";
 const note = (c: ExtensionContext, s: string, t: "info" | "warning" = "info") =>
   c.ui.notify(s, t);
 function validProfile(p: unknown): asserts p is Profile {
@@ -61,6 +63,35 @@ function load(): Record<string, Profile> {
     validProfile(p);
   }
   return v as Record<string, Profile>;
+}
+type ActiveState = { name: string; assignments: Profile };
+function loadActiveState(): ActiveState | undefined {
+  try {
+    if (!existsSync(activeState())) return undefined;
+    const v: unknown = JSON.parse(readFileSync(activeState(), "utf8"));
+    if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+    const state = v as Record<string, unknown>;
+    if (typeof state.name !== "string") return undefined;
+    validProfile(state.assignments);
+    return { name: state.name, assignments: state.assignments };
+  } catch {
+    return undefined;
+  }
+}
+function saveActiveState(name: string, assignments: Profile) {
+  mkdirSync(rootDir(), { recursive: true });
+  const tmp = `${activeState()}.${process.pid}.${Date.now()}.tmp`;
+  writeFileSync(tmp, JSON.stringify({ name, assignments }, null, 2) + "\n", {
+    flag: "wx",
+  });
+  try {
+    renameSync(tmp, activeState());
+  } catch (e) {
+    try {
+      unlinkSync(tmp);
+    } catch {}
+    throw e;
+  }
 }
 function save(v: Record<string, Profile>) {
   mkdirSync(rootDir(), { recursive: true });
@@ -207,7 +238,7 @@ async function edit(
     }
   }
 }
-function prepared(agent: string, value: Assignment) {
+function preparedPlan(agent: string, value: Assignment) {
   if (agent !== path.basename(agent))
     throw new Error(`identificador inseguro: ${agent}`);
   const file = path.join(rootDir(), "agents", `${agent}.md`);
@@ -239,7 +270,45 @@ function prepared(agent: string, value: Assignment) {
     before: { model: ms[0][1], effort: es[0][1] },
   };
 }
+function readAssignment(agent: string): Assignment {
+  return preparedPlan(agent, { model: "", effort: "" }).before;
+}
+function tryReadAssignment(agent: string): Assignment | undefined {
+  try {
+    return readAssignment(agent);
+  } catch {
+    return undefined;
+  }
+}
+function prepared(agent: string, value: Assignment) {
+  return preparedPlan(agent, value);
+}
+export function computeStatus(): string {
+  let profiles: Record<string, Profile>;
+  try {
+    profiles = load();
+  } catch {
+    return "models: custom";
+  }
+  if (!Object.keys(profiles).length) return "models: custom";
+  const state = loadActiveState();
+  if (!state || !profiles[state.name]) return "models: custom";
+  for (const [agent, expected] of Object.entries(state.assignments)) {
+    const actual = tryReadAssignment(agent);
+    if (
+      !actual ||
+      actual.model !== expected.model ||
+      actual.effort !== expected.effort
+    )
+      return "models: modificado";
+  }
+  return `models: ${state.name}`;
+}
+function publishStatus(c: ExtensionContext) {
+  c.ui.setStatus(STATUS_KEY, computeStatus());
+}
 export default function extension(pi: ExtensionAPI) {
+  pi.on("session_start", async (_event, c) => publishStatus(c));
   const crud = (kind: "create" | "edit") =>
     pi.registerCommand(`subagent-profile-${kind}`, {
       description: `${kind} subagent profile`,
@@ -318,7 +387,19 @@ export default function extension(pi: ExtensionAPI) {
         if (!(await c.ui.confirm("Aplicar perfil", `${n}\n${diff}`)))
           return note(c, "Aplicación cancelada.");
         const changed = plans.filter((x) => x.old !== x.next);
-        if (!changed.length) return note(c, "No-op: ningún agente cambia.");
+        if (!changed.length) {
+          try {
+            saveActiveState(n, p[n]);
+          } catch (e) {
+            note(
+              c,
+              `Perfil aplicado, pero no se pudo guardar el estado: ${e}`,
+              "warning",
+            );
+          }
+          publishStatus(c);
+          return note(c, "No-op: ningún agente cambia.");
+        }
         const done: typeof changed = [];
         try {
           for (const x of changed) {
@@ -344,6 +425,16 @@ export default function extension(pi: ExtensionAPI) {
           );
           return;
         }
+        try {
+          saveActiveState(n, p[n]);
+        } catch (e) {
+          note(
+            c,
+            `Perfil aplicado, pero no se pudo guardar el estado: ${e}`,
+            "warning",
+          );
+        }
+        publishStatus(c);
         try {
           await c.reload();
         } catch (e) {
