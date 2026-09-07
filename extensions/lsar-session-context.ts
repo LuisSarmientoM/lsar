@@ -57,6 +57,7 @@ function resolveProjectPipelineConfig(
 
 export default function lsarSessionContext(pi: ExtensionAPI) {
 	let choice: Choice | undefined;
+	let projectRoot: string | undefined;
 	let missingNotified = false;
 
 	pi.registerFlag("sdd-pipeline", {
@@ -66,6 +67,7 @@ export default function lsarSessionContext(pi: ExtensionAPI) {
 	});
 
 	pi.on("session_start", async (_event, ctx: ExtensionContext) => {
+		projectRoot = path.resolve(ctx.cwd);
 		const configPath = path.join(ctx.cwd, ".pi", "lsar.json");
 		const config = resolveProjectPipelineConfig(configPath);
 		if (config.invalid) notifyInvalidConfig(ctx, configPath);
@@ -103,7 +105,8 @@ export default function lsarSessionContext(pi: ExtensionAPI) {
 		if (choice !== "yes") return;
 		const block = loadSddBlock();
 		if (!block) return;
-		return { systemPrompt: `${event.systemPrompt}\n\n${block}` };
+		const root = projectRoot ? `\n\nproject_root: ${projectRoot}` : "";
+		return { systemPrompt: `${event.systemPrompt}\n\n${block}${root}` };
 	});
 
 	function notifyInvalidConfig(ctx: ExtensionContext, configPath: string) {

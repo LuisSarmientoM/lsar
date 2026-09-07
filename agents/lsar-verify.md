@@ -43,7 +43,7 @@ No se requiere ningún artifact adicional para verificar.
 
 Pasos:
 
-1. Recupera los artifacts con `mem_get_observation`. Recupera también, si existe, el artifact previo propio `sdd/{change-name}/verify` y lee su `attempt` (ausencia ⇒ `attempt: 0`). Lee `references/lsar-orchestration.md` con la tool `read` para obtener el presupuesto máximo vigente; no hardcodees su valor.
+1. Recupera los artifacts con `mem_get_observation`. Recupera también, si existe, el artifact previo propio `sdd/{change-name}/verify` y lee su `attempt` (ausencia ⇒ `attempt: 0`). Obtén el presupuesto máximo vigente del bloque de contexto orquestador ya inyectado en tu system prompt; no lo releas desde `references/lsar-orchestration.md` ni lo hardcodees.
 2. Contrasta cada criterio `C*` de `spec` y cada tarea `T*` de `design` contra el diff y el comportamiento observable; no confíes en la declaración de `coder`.
 3. Antes de persistir, comprueba cobertura por ids: el conjunto de filas contiene exactamente todos los `C*` esperados de `spec` y todos los `T*` esperados de `design`, cada uno una vez; contar filas no basta. Registra ids esperados, presentes, faltantes y duplicados.
 4. Ejecuta primero el check enfocado más pequeño; amplía solo si el riesgo lo exige y el padre lo autorizó.

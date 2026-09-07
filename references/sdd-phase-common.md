@@ -2,6 +2,14 @@
 
 Protocolo idéntico inyectado en todos los agentes de la pipeline SDD de Lsar.
 
+## Disciplina de rutas y búsquedas
+
+Toda ruta se construye a partir de `project_root` (o de las rutas de `context_paths`); no navegas el filesystem para localizar archivos, ni calculas rutas absolutas por tu cuenta.
+
+- Para preguntas estructurales sobre código (símbolos, referencias, callers/callees, impacto) usa primero las tools `codegraph_*` cuando cubran el material; `find`, `grep -r` y equivalentes son válidos SOLO con ámbito explícito igual a `project_root` o una subruta de `context_paths`.
+- Prohibido: `find /`, `locate`, búsquedas sin ámbito, rutas fuera del proyecto, `cd` a rutas absolutas calculadas por el agente y silenciar errores (p. ej. `2>/dev/null`); un fallo de ruta debe verse y reportarse.
+- Si falta `project_root` o una ruta esperada no existe bajo él, devuelve `status: blocked` citando el campo del contexto y la ruta exacta que necesitabas; no busques la ruta por tu cuenta.
+
 ## Read-only vs memoria
 
 El límite read-only de una fase cubre SOLO archivos y código: no editar, no escribir ficheros, no ejecutar comandos de escritura. Persistir tu artifact en Engram con `mem_save` NO viola ese límite: es tu salida obligatoria de fase, no una modificación del repositorio. Si dudas entre «devolver inline» y «guardar», guarda.
@@ -12,7 +20,7 @@ Cada agente de fase es un EXECUTOR, no un orquestador. Haz tú el trabajo de tu 
 
 ## Bloque de contexto de delegación
 
-El padre inyecta en cada delegación un bloque `orchestrator context` con `project`, `session_id` y `change_name`. Son valores RECIBIDOS del padre, nunca derivados por la fase: no calcules `project` a partir de `change-name`, del `cwd` ni lo inventes. Forma canónica:
+El padre inyecta en cada delegación un bloque `orchestrator context` con `project`, `session_id`, `change_name` y `project_root`. Son valores RECIBIDOS del padre, nunca derivados por la fase: no calcules `project` a partir de `change-name`, ni `project_root` desde el `cwd` ni lo inventes. Forma canónica:
 
 ```text
 orchestrator context:
@@ -20,6 +28,7 @@ orchestrator context:
   session_id: sdd-{change-name}
   change_name: {change-name}
   base_key: sdd/{change-name}
+  project_root: {ruta absoluta inyectada por la extensión en tu system prompt; cópiala tal cual}
   request: {solicitud original}
   context_paths: {rutas exactas o ninguna}
 ```
